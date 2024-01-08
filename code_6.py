@@ -9,6 +9,8 @@
 # from bs4 import BeautifulSoup
 # import requests
 import csv
+import os
+import requests
 from selenium import webdriver
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -20,8 +22,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 url = "https://www.fishbase.org.au/v4"
-# page = requests.get(url)
-# soup = BeautifulSoup(requests.get(url).content, 'html.parser')
+folder_path = '/Users/justinluo/projects/fishDetection/output'
 options = Options()
 
 driver = webdriver.Chrome(
@@ -29,26 +30,24 @@ driver = webdriver.Chrome(
 )
 
 driver.get(url)
-commonName = "California Scorpionfish"
-scientificName = "Scorpaena guttata"
-# name_input = WebDriverWait(driver, 10).until(
-#     EC.presence_of_element_located((By.ID, 'main-search-input'))
-# )
-name_input = driver.find_element(By.ID, "main-search-input")
-name_input.send_keys(commonName)
-name_input.send_keys(Keys.RETURN)
-button = driver.find_element(By.XPATH, f'//span[text()="{scientificName}"]')
-button.click()
-thing = driver.find_element(By.XPATH, f'//*[@id="biology"]')
-# thing2 = driver.find_elements(By.ID, 'size')
-thing.click()
-biology = driver.find_element(By.XPATH, f'//*[@id="biology"]/div/p')
-biology_text = biology.text
-print(commonName)
-print(biology_text)
-# print(thing2)
-# driver.back()
-# driver.back()
-# driver.quit()
+commonName = ""
+scientificName = ""
+with open('SpeciesList.csv', 'r') as file:
+    reader = csv.reader(file)
+    next(reader)
+    for row in reader:
+        commonName = row[5]
+        scientificName = row[3] + " " + row[4]
+        name_input = driver.find_element(By.XPATH, f'//*[@id="main-search-input"]')
+        name_input.send_keys(commonName)
+        name_input.send_keys(Keys.RETURN)
+        button = driver.find_element(By.XPATH, f'//span[text()="{scientificName}"]')
+        button.click()
+        img = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, f'//*[@id="species-images-item0"]/a/img')))
+        img_link = img.get_attribute('src')
+        data = requests.get(img_link)
+        file_path = os.path.join(folder_path, f'{commonName}.jpg')
+        with open(file_path, 'ab') as file:
+            file.write(data.content)
 while(True):
     pass
